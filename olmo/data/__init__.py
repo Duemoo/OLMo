@@ -116,6 +116,45 @@ def build_train_dataloader(train_config: TrainConfig) -> DataLoader:
         timeout=train_config.data.timeout,
     )
     
+def build_sft_dataloader(
+    train_config: TrainConfig,
+) -> DataLoader:
+    tokenizer = Tokenizer.from_train_config(train_config)  
+    assert train_config.probe_dataset is not None
+    with open(train_config.probe_dataset, 'r') as f:
+        raw_dataset = json.load(f)
+        
+        
+        
+        
+    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "metadata": (all_data[i][1], all_targets_tokenized[i])} for i in range(len(all_data))])
+    collator = DataCollator(
+        pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
+    )
+    seed = train_config.seed
+    sampler = DistributedSampler(
+        dataset,
+        drop_last=False,
+        shuffle=False,
+        num_replicas=get_world_size(),
+        rank=get_global_rank(),
+        seed=seed,
+    )
+    
+    return DataLoader(
+        dataset,
+        # batch_size=train_config.device_train_batch_size,
+        batch_size=train_config.device_eval_batch_size,
+        collate_fn=collator,
+        num_workers=train_config.data.num_workers,
+        sampler=sampler,
+        pin_memory=train_config.data.pin_memory,
+        prefetch_factor=None if train_config.data.num_workers == 0 else train_config.data.prefetch_factor,
+        persistent_workers=False if train_config.data.num_workers == 0 else train_config.data.persistent_workers,
+        timeout=train_config.data.timeout,
+        drop_last=False
+    )
+    
     
 def build_custom_dataloader(
     train_config: TrainConfig,
