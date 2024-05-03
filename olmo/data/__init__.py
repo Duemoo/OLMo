@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 import json
-
+import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
 from ..aliases import PathOrStr
-from ..config import DataConfig, TrainConfig
+from ..config import DataConfig, TrainConfig, PaddingDirection
 from ..exceptions import OLMoConfigurationError
 from ..torch_util import barrier, get_global_rank, get_world_size
 from .collator import DataCollator
@@ -119,15 +120,35 @@ def build_train_dataloader(train_config: TrainConfig) -> DataLoader:
 def build_sft_dataloader(
     train_config: TrainConfig,
 ) -> DataLoader:
-    tokenizer = Tokenizer.from_train_config(train_config)  
-    assert train_config.probe_dataset is not None
-    with open(train_config.probe_dataset, 'r') as f:
-        raw_dataset = json.load(f)
+    tokenizer = Tokenizer.from_train_config(train_config)
+    raw_dataset = []
+    assert train_config.data.paths is not None
+    for path in train_config.data.paths:
+        with open(path, 'r') as f:
+            raw_dataset.extend(json.load(f))
+    
+    train_context = []
+    for data in raw_dataset:
+        train_context.append(data["train_context"])
+    all_data_tokenized = tokenizer.encode_batch(train_context, add_special_tokens=False)
+    all_attention_masks = []
+    for i, data in enumerate(all_data_tokenized):
+        if not isinstance(data, torch.Tensor):
+            data = torch.tensor(data)
         
-        
-        
-        
-    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "metadata": (all_data[i][1], all_targets_tokenized[i])} for i in range(len(all_data))])
+        max_len = train_config.model.max_sequence_length
+        pad_shape = (
+            (max_len - len(data), 0)
+            if train_config.data.pad_direction == PaddingDirection.left
+            else (0, max_len - len(data))
+        )
+        # Pad input IDs to model's max sequence length
+        all_data_tokenized[i] = F.pad(data.to(dtype=torch.long), pad_shape, value=tokenizer.pad_token_id)
+        attention_mask = torch.ones_like(data)
+        all_attention_masks.append(F.pad(attention_mask.to(dtype=torch.float), pad_shape, value=0.0))
+    
+    assert len(all_data_tokenized) == len(all_attention_masks)
+    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i], "index": i} for i in range(len(all_data_tokenized))])
     collator = DataCollator(
         pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
     )
