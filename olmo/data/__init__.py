@@ -148,11 +148,20 @@ def build_sft_dataloader(
         all_attention_masks.append(F.pad(attention_mask.to(dtype=torch.float), pad_shape, value=0.0))
     
     assert len(all_data_tokenized) == len(all_attention_masks)
-    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i], "index": i} for i in range(len(all_data_tokenized))])
+    # dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i], "index": i} for i in range(len(all_data_tokenized))])
+    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i]} for i in range(len(all_data_tokenized))])
+    work_dir = Path(train_config.save_folder) / "train_data"
+    if get_global_rank() == 0:
+        if work_dir.is_dir() and not train_config.save_overwrite:
+            raise OLMoConfigurationError(
+                "train data working directory already exists, use --save_overwrite to overwrite"
+            )
+        else:
+            work_dir.mkdir(exist_ok=True, parents=True)
     collator = DataCollator(
         pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
     )
-    seed = train_config.seed
+    seed = train_config.data.seed if train_config.data.seed is not None else train_config.seed
     sampler = DistributedSampler(
         dataset,
         drop_last=False,
@@ -161,19 +170,23 @@ def build_sft_dataloader(
         rank=get_global_rank(),
         seed=seed,
     )
-    
     return DataLoader(
-        dataset,
+        IterableDataset(
+            dataset,  # type: ignore
+            train_config.global_train_batch_size,
+            seed=seed + (train_config.epoch or 0),
+            shuffle=train_config.data_shuffling,
+            drop_last=train_config.data.drop_last,
+            work_dir=work_dir,
+        ),
         batch_size=train_config.device_train_batch_size,
-        # batch_size=train_config.device_eval_batch_size,
+        drop_last=train_config.data.drop_last,
         collate_fn=collator,
         num_workers=train_config.data.num_workers,
-        sampler=sampler,
         pin_memory=train_config.data.pin_memory,
         prefetch_factor=None if train_config.data.num_workers == 0 else train_config.data.prefetch_factor,
         persistent_workers=False if train_config.data.num_workers == 0 else train_config.data.persistent_workers,
-        timeout=train_config.data.timeout,
-        drop_last=False
+        timeout=train_config.data.timeout
     )
     
     

@@ -2,7 +2,8 @@ ckpt_step: CHECKPOINT_STEP  # Choose between [40000, 113000, 339000]
 dataset_path: PATH_TO_DATASET
 ckpt_dir: DIRECTORY_CONTAINS_OFFICIAL_CHECKPOINTS
 
-run_name: OLMo-1B_sft_step${ckpt_step}
+
+run_name: OLMo-7B_sft_step${ckpt_step}
 seed: 6198
 dry_run: false
 
@@ -12,14 +13,14 @@ dry_run: false
 #   entity: lklab_kaist
 
 model:
-  d_model: 2048
-  n_heads: 16
-  n_layers: 16
-  mlp_ratio: 8
-  weight_tying: true
+  d_model: 4096
+  n_heads: 32
+  n_layers: 32
+  mlp_hidden_size: 22016
+  weight_tying: false
   alibi: false
   rope: true
-  flash_attention: true  # not available on AMD
+  flash_attention: true
   attention_dropout: 0.0
   attention_layer_norm: false
   multi_query_attention: false
@@ -59,9 +60,8 @@ tokenizer:
   truncate_direction: right
 
 save_folder: ${oc.env:SCRATCH_DIR,no_exist}/checkpoints/${run_name}
-# save_folder: ${oc.env:SAVE_DIR,${oc.env:SCRATCH_DIR}}/sft/${run_name}
 remote_save_folder: null
-save_overwrite: false
+save_overwrite: true
 # Sharded checkpoints (best for restarts)
 save_interval: 10
 save_num_checkpoints_to_keep: -1
@@ -74,7 +74,6 @@ reset_optimizer_state: true
 reset_trainer_state: true
 probe_dataset: ${oc.env:SCRATCH_DIR,no_exist}/fictional_knowledge/fictional_knowledge_paraphrased.json
 eval_on_load: true
-
 
 max_duration: 5ep  # 5 epochs
 global_train_batch_size: 16
@@ -93,7 +92,7 @@ max_grad_norm_ratio: null
 speed_monitor:
   window_size: 20
 
-eval_interval: 10
+eval_interval: 1
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators: []
@@ -108,4 +107,5 @@ data:
   prefetch_factor: 1
   persistent_workers: true
   timeout: 0
-  paths: $dataset_path
+  paths:
+    - $dataset_path
