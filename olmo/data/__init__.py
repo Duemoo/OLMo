@@ -164,8 +164,8 @@ def build_sft_dataloader(
     
     return DataLoader(
         dataset,
-        # batch_size=train_config.device_train_batch_size,
-        batch_size=train_config.device_eval_batch_size,
+        batch_size=train_config.device_train_batch_size,
+        # batch_size=train_config.device_eval_batch_size,
         collate_fn=collator,
         num_workers=train_config.data.num_workers,
         sampler=sampler,

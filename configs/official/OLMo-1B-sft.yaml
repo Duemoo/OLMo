@@ -1,6 +1,11 @@
-run_name: OLMo-1B
+run_name: OLMo-1B_sft_step117850
 seed: 6198
 dry_run: false
+
+wandb:
+  name: ${run_name}
+  project: olmo
+  entity: lklab_kaist
 
 model:
   d_model: 2048
@@ -44,35 +49,32 @@ optimizer:
 
 scheduler:
   name: constant
-  t_warmup: 5000
-  alpha_f: 0.1
-  grad_clip_warmup_steps: 1000
-  grad_clip_warmup_factor: 10.0
 
 tokenizer:
   identifier: tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json
   truncate_direction: right
 
-save_folder: ${oc.env:SCRATCH_DIR,no_exist}/checkpoints/${run_name}
+# save_folder: ${oc.env:SCRATCH_DIR,no_exist}/checkpoints/${run_name}
+save_folder: ${oc.env:SAVE_DIR,${oc.env:SCRATCH_DIR}}/sft/${run_name}
 remote_save_folder: null
 save_overwrite: false
 # Sharded checkpoints (best for restarts)
-save_interval: 1000
-save_num_checkpoints_to_keep: -1
+save_interval: 10
+save_num_checkpoints_to_keep: 2
 # Unsharded checkpoints (for final storage)
 save_interval_unsharded: null
 save_num_unsharded_checkpoints_to_keep: -1
 
-load_path: /home/jinho/repos/OLMo/official_checkpoints/1b/step117850-unsharded
-# inject_indices_map: ${oc.env:SCRATCH_DIR,no_exist}/analysis/inject_indices_map/7b-0.pkl
-probe_dataset: ${oc.env:SCRATCH_DIR,no_exist}/fictional_knowledge/fictional_knowledge_paraphrased.json
-eval_on_load: true
+load_path: ${oc.env:SCRATCH_DIR}/official_checkpoints/1b/step117850-unsharded
 reset_optimizer_state: true
 reset_trainer_state: true
+probe_dataset: ${oc.env:SCRATCH_DIR,no_exist}/fictional_knowledge/fictional_knowledge_paraphrased.json
+eval_on_load: true
+
 
 max_duration: 2ep  # 2 epochs
-global_train_batch_size: 16
-device_train_microbatch_size: 4
+global_train_batch_size: 4
+device_train_microbatch_size: 1
 time_limit: null
 
 precision: amp_bf16
@@ -89,7 +91,7 @@ speed_monitor:
 
 eval_interval: 10
 eval_subset_num_batches: -1
-device_eval_batch_size: 4
+device_eval_batch_size: ${device_train_microbatch_size}
 evaluators: []
 
 data_shuffling: false
@@ -103,5 +105,3 @@ data:
   persistent_workers: true
   timeout: 0
   paths: [/home/jinho/repos/OLMo/fictional_knowledge/fictional_knowledge_paraphrased.json]
-
-  # /home/jinho/repos/OLMo/fictional_knowledge/fictional_knowledge_paraphrased.json
