@@ -56,3 +56,6 @@ site/
 /wandb/
 /scratch/
 core
+
+# saved checkpoints
+/checkpoints

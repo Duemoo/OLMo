@@ -1,18 +1,18 @@
 #!/bin/bash
 
-scratch_dir=/home/jinho/repos/OLMo
+scratch_dir=/data/jinho/repos/OLMo
 export SCRATCH_DIR=${scratch_dir}
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=4,5,6,7
 
 
 # Choose between [40000, 113000, 339000]
-model_size=1b
+model_size=7B
 ckpt_step=113000
 dataset_path="[${scratch_dir}/fictional_knowledge/fictional_knowledge_paraphrased.json]"
 # ckpt_dir=/mnt/nas/jinho/olmo_checkpoints/${model_size}
-ckpt_dir=/home/hoyeon/official_checkpoints/${model_size}
+ckpt_dir=${scratch_dir}/official_checkpoints/${model_size}
 
-torchrun --nproc_per_node=1 scripts/train.py configs/official/OLMo-${model_size}-sft.yaml \
+torchrun --nproc_per_node=4 scripts/train.py configs/official/OLMo-${model_size}-sft.yaml \
     --run_name="OLMo-${model_size}_sft_step${ckpt_step}" \
     --data.paths=${dataset_path} \
     --load_path=${ckpt_dir}/step${ckpt_step}-unsharded \

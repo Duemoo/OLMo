@@ -1,6 +1,6 @@
 run_name: RUN_NAME
 seed: 6198
-dry_run: true
+dry_run: false
 
 wandb:
   name: ${run_name}
@@ -71,8 +71,8 @@ reset_trainer_state: true
 probe_dataset: ${oc.env:SCRATCH_DIR,no_exist}/fictional_knowledge/fictional_knowledge_paraphrased.json
 eval_on_load: true
 
-max_duration: 2ep  # 5 epochs
-global_train_batch_size: 4
+max_duration: 1ep  # 5 epochs
+global_train_batch_size: 16
 device_train_microbatch_size: 2
 time_limit: null
 

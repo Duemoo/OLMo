@@ -1132,6 +1132,8 @@ class Trainer:
                     # fail loudly.
                     batch_size, seq_len = batch["input_ids"].shape
                     assert seq_len == self.cfg.model.max_sequence_length
+                    if batch_size != self.cfg.device_train_batch_size:
+                        print(f"batch size error!!! current batch size is: {batch_size}")
                     assert batch_size == self.cfg.device_train_batch_size
                     global_batch_size = batch_size * get_world_size()  # assumes batch size equal across ranks
                     self.global_step += 1
