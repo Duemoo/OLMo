@@ -2,10 +2,10 @@ run_name: RUN_NAME
 seed: 6198
 dry_run: true
 
-# wandb:
-#   name: ${run_name}
-#   project: olmo
-#   entity: lklab_kaist
+wandb:
+  name: ${run_name}
+  project: olmo
+  entity: lklab_kaist
 
 model:
   d_model: 2048
@@ -71,7 +71,7 @@ reset_trainer_state: true
 probe_dataset: ${oc.env:SCRATCH_DIR,no_exist}/fictional_knowledge/fictional_knowledge_paraphrased.json
 eval_on_load: true
 
-max_duration: 5ep  # 5 epochs
+max_duration: 2ep  # 5 epochs
 global_train_batch_size: 4
 device_train_microbatch_size: 2
 time_limit: null
