@@ -12,8 +12,15 @@ dataset_path="[${scratch_dir}/fictional_knowledge/fictional_knowledge_paraphrase
 # ckpt_dir=/mnt/nas/jinho/olmo_checkpoints/${model_size}
 ckpt_dir=${scratch_dir}/official_checkpoints/${model_size}
 
-torchrun --nproc_per_node=4 scripts/train.py configs/official/OLMo-${model_size}-sft.yaml \
+torchrun --nproc_per_node=4 scripts/sft.py configs/official/OLMo-${model_size}-sft.yaml \
     --run_name="OLMo-${model_size}_sft_step${ckpt_step}" \
     --data.paths=${dataset_path} \
     --load_path=${ckpt_dir}/step${ckpt_step}-unsharded \
     --device_eval_batch_size=8 \
+
+# unzip training data indices file
+save_dir="${scratch_dir}/checkpoints/OLMo-${model_size}_sft_step${ckpt_step}/data-indices"
+
+for gz_file in ${save_dir}/*; do
+    gzip -d ${gz_file}
+done

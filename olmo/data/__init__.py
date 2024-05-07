@@ -149,7 +149,7 @@ def build_sft_dataloader(
     
     assert len(all_data_tokenized) == len(all_attention_masks)
     # dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i], "index": i} for i in range(len(all_data_tokenized))])
-    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i]} for i in range(len(all_data_tokenized))])
+    dataset = CustomDataset([{"input_ids": all_data_tokenized[i], "attention_mask": all_attention_masks[i], "index": i} for i in range(len(all_data_tokenized))])
     work_dir = Path(train_config.save_folder) / "train_data"
     if get_global_rank() == 0:
         if work_dir.is_dir() and not train_config.save_overwrite:
